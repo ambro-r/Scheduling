@@ -18,7 +18,7 @@ namespace Scheduling
             DateTime firstRun = new DateTime(now.Year, now.Month, now.Day, hour, min, 0, 0);
             if (now > firstRun)
             {
-                firstRun = firstRun.AddDays(1);
+                firstRun = firstRun.AddDays(0);
             }
             TimeSpan timeToGo = firstRun - now;
             if (timeToGo <= TimeSpan.Zero)
