@@ -1,14 +1,13 @@
 ﻿using Scheduling.Constants;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
-using System.Text;
+using System.Runtime.Caching;
 
 namespace Scheduling
 {
     public static class Scheduler
-    {        
+    {
 
         private static List<System.Type> GetSchedulerTypes()
         {
@@ -26,29 +25,39 @@ namespace Scheduling
             return types;
         }
 
-        private static void InvokeMethod(MethodInfo method, Scheduling.Attributes.Schedule schedule)
+        private static void InvokeMethod(System.Type schedulerType, MethodInfo method, Scheduling.Attributes.Schedule schedule)
         {
             double intervalInHours;
             switch(schedule.IntervalType)
             {
                 case IntervalType.DAYS:
-                    intervalInHours = schedule.Interval * 24;
+                    intervalInHours = (double) schedule.Interval * 24;
                     break;
                 case IntervalType.HOURS:
-                    intervalInHours = schedule.Interval;
+                    intervalInHours = (double) schedule.Interval;
                     break;
                 case IntervalType.MINTURES:
-                    intervalInHours = schedule.Interval / 60;
+                    intervalInHours = (double) schedule.Interval / 60;
                     break;
                 case IntervalType.SECONDS:
-                    intervalInHours = schedule.Interval / 3600;
+                    intervalInHours = (double) schedule.Interval / 3600;
                     break;
                 default:
                     intervalInHours = 0;
                     break;
             }
+           
+            SchedulerService.Instance.ScheduleTask(DateTime.Now.Hour, DateTime.Now.Minute, intervalInHours, () => {
+                string key = schedulerType.FullName + "." + method.Name;
+                if (!MemoryCache.Default.Contains(key))
+                {
+                    MemoryCache.Default.Add(key, "running", DateTime.Now.AddHours(24));
+                    object classObject = Activator.CreateInstance(schedulerType);
+                    method.Invoke(classObject, null);
+                    MemoryCache.Default.Remove(key);
+                }             
+            });
 
-            SchedulerService.Instance.ScheduleTask(hour, min, intervalInHours, method.Invoke(method, null));
         }
 
         public static void InitateSchedules()
@@ -69,7 +78,7 @@ namespace Scheduling
                 foreach(MethodInfo scheduledTask in scheduledTasks)
                 {
                     Scheduling.Attributes.Schedule schedule = (Scheduling.Attributes.Schedule) scheduledTask.GetCustomAttribute(typeof(Scheduling.Attributes.Schedule));
-                    InvokeMethod(scheduledTask, schedule);
+                    InvokeMethod(schedulerType, scheduledTask, schedule);
                 }
             }
         }

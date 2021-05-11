@@ -1,4 +1,5 @@
 ﻿using Scheduling;
+using System;
 
 namespace Sample
 {
@@ -7,6 +8,8 @@ namespace Sample
         private static void Main(string[] args)
         {
             Scheduler.InitateSchedules();
+            Console.WriteLine("Press any key to stop...");
+            Console.ReadKey();
         }
     }
 }
