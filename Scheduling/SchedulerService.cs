@@ -9,7 +9,7 @@ namespace Scheduling
         private SchedulerService() { }
 
         private List<Timer> Timers = new List<Timer>();
-        
+
         public static SchedulerService Instance { get; } = new SchedulerService();
 
         public void ScheduleTask(int hour, int min, double intervalInHours, Action task)

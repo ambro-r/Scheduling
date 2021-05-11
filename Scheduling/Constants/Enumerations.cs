@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Scheduling.Constants
+﻿namespace Scheduling.Constants
 {
     public enum IntervalType
     {
@@ -10,7 +6,7 @@ namespace Scheduling.Constants
         SECONDS,
         MINTURES,
         HOURS,
-        DAYS        
+        DAYS
     }
 
     public enum Days

@@ -44,17 +44,18 @@ namespace Sample
         }
 
         [Schedule(IntervalType = IntervalType.SECONDS, Interval = 20)]
-        public void TwentySecondIntervalMultipleInstances()
+        public void TwentySecondIntervalSixitySecondSleep()
         {
             lock (Console.Out)
             {
                 Console.ForegroundColor = ConsoleColor.White;
-                Console.WriteLine(string.Format("{0}:{1}", DateTime.Now.ToString("hh:mm:ss"), "Twenty Second Interval Multiple Instances"));
+                Console.WriteLine(string.Format("{0}:{1}", DateTime.Now.ToString("hh:mm:ss"), "Twenty Second Interval + Sixity Second Sleep"));
             }
             try
             {
-                Thread.Sleep(60000);                
-            } catch (Exception e)
+                Thread.Sleep(60000);
+            }
+            catch (Exception e)
             {
                 lock (Console.Out)
                 {
@@ -71,6 +72,16 @@ namespace Sample
             {
                 Console.ForegroundColor = ConsoleColor.Magenta;
                 Console.WriteLine(string.Format("{0}:{1}", DateTime.Now.ToString("hh:mm:ss"), "Once Off"));
+            }
+        }
+
+        [Schedule(IntervalType = IntervalType.SECONDS, Interval = 5, Start = "08:00", Stop = "09:00")]
+        public void FiveSecondInterval()
+        {
+            lock (Console.Out)
+            {
+                Console.ForegroundColor = ConsoleColor.Gray;
+                Console.WriteLine(string.Format("{0}:{1}", DateTime.Now.ToString("hh:mm:ss"), "Five Second Interval between 08:00 and 09:00"));
             }
         }
 

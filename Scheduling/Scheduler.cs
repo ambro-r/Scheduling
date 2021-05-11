@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using System.Runtime.Caching;
 
 namespace Scheduling
 {
@@ -14,7 +13,7 @@ namespace Scheduling
             List<System.Type> types = new List<System.Type>();
             foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
             {
-                foreach(Type type in assembly.GetTypes())
+                foreach (Type type in assembly.GetTypes())
                 {
                     if (type.GetCustomAttributes(typeof(Scheduling.Attributes.Scheduler), true).Length > 0)
                     {
@@ -28,34 +27,42 @@ namespace Scheduling
         private static void InvokeMethod(System.Type schedulerType, MethodInfo method, Scheduling.Attributes.Schedule schedule)
         {
             double intervalInHours;
-            switch(schedule.IntervalType)
+            switch (schedule.IntervalType)
             {
                 case IntervalType.DAYS:
-                    intervalInHours = (double) schedule.Interval * 24;
+                    intervalInHours = (double)schedule.Interval * 24;
                     break;
                 case IntervalType.HOURS:
-                    intervalInHours = (double) schedule.Interval;
+                    intervalInHours = (double)schedule.Interval;
                     break;
                 case IntervalType.MINTURES:
-                    intervalInHours = (double) schedule.Interval / 60;
+                    intervalInHours = (double)schedule.Interval / 60;
                     break;
                 case IntervalType.SECONDS:
-                    intervalInHours = (double) schedule.Interval / 3600;
+                    intervalInHours = (double)schedule.Interval / 3600;
                     break;
                 default:
                     intervalInHours = 0;
                     break;
             }
-           
-            SchedulerService.Instance.ScheduleTask(DateTime.Now.Hour, DateTime.Now.Minute, intervalInHours, () => {
+
+            SchedulerService.Instance.ScheduleTask(DateTime.Now.Hour, DateTime.Now.Minute, intervalInHours, () =>
+            {
                 string key = schedulerType.FullName + "." + method.Name;
-                if (!MemoryCache.Default.Contains(key))
+                if (SchedulerCache.Instance.Start(key))
                 {
-                    MemoryCache.Default.Add(key, "running", DateTime.Now.AddHours(24));
-                    object classObject = Activator.CreateInstance(schedulerType);
-                    method.Invoke(classObject, null);
-                    MemoryCache.Default.Remove(key);
-                }             
+                    try
+                    {
+                        object classObject = Activator.CreateInstance(schedulerType);
+                        method.Invoke(classObject, null);
+                        // TODO: Add Logging;
+                    }
+                    catch (Exception)
+                    {
+                        // TODO: Add Logging;
+                    }
+                    SchedulerCache.Instance.Stop(key);
+                }
             });
 
         }
@@ -65,7 +72,7 @@ namespace Scheduling
             List<System.Type> schedulerTypes = GetSchedulerTypes();
             foreach (System.Type schedulerType in schedulerTypes)
             {
-                Scheduling.Attributes.Scheduler scheduler = (Scheduling.Attributes.Scheduler) schedulerType.GetCustomAttribute(typeof(Scheduling.Attributes.Scheduler));
+                Scheduling.Attributes.Scheduler scheduler = (Scheduling.Attributes.Scheduler)schedulerType.GetCustomAttribute(typeof(Scheduling.Attributes.Scheduler));
                 List<MethodInfo> scheduledTasks = new List<MethodInfo>();
                 foreach (MethodInfo method in schedulerType.GetMethods())
                 {
@@ -74,16 +81,16 @@ namespace Scheduling
                         scheduledTasks.Add(method);
                     }
                 }
-               
-                foreach(MethodInfo scheduledTask in scheduledTasks)
+
+                foreach (MethodInfo scheduledTask in scheduledTasks)
                 {
-                    Scheduling.Attributes.Schedule schedule = (Scheduling.Attributes.Schedule) scheduledTask.GetCustomAttribute(typeof(Scheduling.Attributes.Schedule));
+                    Scheduling.Attributes.Schedule schedule = (Scheduling.Attributes.Schedule)scheduledTask.GetCustomAttribute(typeof(Scheduling.Attributes.Schedule));
                     InvokeMethod(schedulerType, scheduledTask, schedule);
                 }
             }
         }
-    
-        
+
+
 
     }
 }
