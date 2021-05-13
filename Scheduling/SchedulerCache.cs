@@ -12,60 +12,22 @@ namespace Scheduling
 
         public static SchedulerCache Instance { get; } = new SchedulerCache();
 
-        private ConcurrentDictionary<string, ScheduleTracking> ScheduleStatus = new ConcurrentDictionary<string, ScheduleTracking>();
+        private bool Running { get; set; } = false;
 
-        public bool Start(string key)
-        {
-            bool start = true;
-            if (!ScheduleStatus.ContainsKey(key))
-            {
-                // Don't "start" if we can't add the key
-                start = ScheduleStatus.TryAdd(key, new ScheduleTracking() { Running = false });
-            }
-
-            if (start && !ScheduleStatus[key].Running)
-            {                 
-                ScheduleStatus[key].Executed++;
-                ScheduleStatus[key].Started = DateTime.Now;
-                ScheduleStatus[key].Running = true;
-                ScheduleStatus[key].Stopwatch.Start();                
-            } else
-            {
-                // Don't "start" if the ScheduleStatus[key].Running = true
-                start = false;
-            }
-            return start;
+        public void Start() {
+            Running = true;
         }
 
-        public void Stop(string key)
+        public void Stop()
         {
-            if (ScheduleStatus.ContainsKey(key))
-            {
-                ScheduleStatus[key].Stopped = DateTime.Now;
-                ScheduleStatus[key].Running = false;
-                ScheduleStatus[key].Stopwatch.Stop();
-            }
+            Running = false;
         }
 
-        public long ElapsedMilliseconds(string key)
+        public bool IsRunning()
         {
-            return ScheduleStatus.TryGetValue(key, out ScheduleTracking scheduleTracking) ? scheduleTracking.Stopwatch.ElapsedMilliseconds : -1;
+            return Running;
         }
 
-        public bool IsRunning(string key)
-        {
-            return ScheduleStatus.TryGetValue(key, out ScheduleTracking scheduleTracking) ? scheduleTracking.Running : false;
-        }
-
-        public DateTime? StartedTimeStamp(string key)
-        {
-            return ScheduleStatus.TryGetValue(key, out ScheduleTracking scheduleTracking) ? scheduleTracking.Started : null;
-        }
-
-        public DateTime? StoppedTimeStamp(string key)
-        {
-            return ScheduleStatus.TryGetValue(key, out ScheduleTracking scheduleTracking) ? scheduleTracking.Stopped : null;
-        }
 
     }
 }

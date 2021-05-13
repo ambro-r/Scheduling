@@ -57,25 +57,48 @@ namespace Scheduling
             return minute;
         }
 
+        private DateTime GetStartDateTime(Scheduling.Attributes.Schedule schedule)
+        {            
+            int startHour = GetHour(schedule.Start);
+            int startMinute = GetMinute(schedule.Start);
+
+            DateTime now = DateTime.Now;
+            DateTime startRun = now;
+            if (startHour > -1)
+            {
+                startRun = new DateTime(now.Year, now.Month, now.Day, startHour, startMinute, 0, 0);
+            }
+
+            return startRun;
+        }
+
+        private DateTime? GetStopDateTime(Scheduling.Attributes.Schedule schedule)
+        {
+            int stopHour = GetHour(schedule.Stop);
+            int stopMinute = GetMinute(schedule.Stop);
+
+            DateTime now = DateTime.Now;
+            DateTime? stopRun = null;
+            if (stopHour > -1)
+            {
+                stopRun = new DateTime(now.Year, now.Month, now.Day, stopHour, stopMinute, 0, 0);
+            }
+
+            return stopRun;
+        }
+      
         public void ScheduleTask(Scheduling.Attributes.Schedule schedule, Action task)
         {
-            DateTime now = DateTime.Now;
-
-            int hour = GetHour(schedule.Start);
-            int minute = GetMinute(schedule.Start);
-            DateTime startRun = DateTime.Now;
-            if(hour > -1)
-            {
-                startRun = new DateTime(now.Year, now.Month, now.Day, hour, minute, 0, 0);
-            } 
+            DateTime startRun = GetStartDateTime(schedule);
+            DateTime? stopRun = GetStopDateTime(schedule);
 
             TimeSpan timeToStart = startRun - DateTime.Now;
-
             if (timeToStart <= TimeSpan.Zero)
             {
                 timeToStart = TimeSpan.Zero;
             }
 
+            
             Timer timer = new Timer(x =>
             {
                 task.Invoke();
