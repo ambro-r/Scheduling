@@ -14,29 +14,6 @@ namespace Scheduling
 
         private static ConcurrentDictionary<string, ScheduledTask> ScheduledTasks = new ConcurrentDictionary<string, ScheduledTask>();
 
-        private static double GetIntervalInHours(Scheduling.Attributes.Schedule schedule)
-        {
-            double intervalInHours;
-            switch (schedule.IntervalType)
-            {
-                case IntervalType.DAYS:
-                    intervalInHours = (double)schedule.Interval * 24;
-                    break;
-                case IntervalType.HOURS:
-                    intervalInHours = (double)schedule.Interval;
-                    break;
-                case IntervalType.MINTURES:
-                    intervalInHours = (double)schedule.Interval / 60;
-                    break;
-                case IntervalType.SECONDS:
-                    intervalInHours = (double)schedule.Interval / 3600;
-                    break;
-                default:
-                    intervalInHours = 0;
-                    break;
-            }
-            return intervalInHours;
-        }
 
         private static string AddScheduledTask(System.Type type, MethodInfo method, Scheduling.Attributes.Schedule schedule)
         {
@@ -48,7 +25,7 @@ namespace Scheduling
                 {
                     Type = type,
                     Method = method,
-                    IntervalInHours = GetIntervalInHours(schedule),
+                    IntervalInHours = SchedulerHelper.Instance.GetIntervalInHours(schedule.IntervalType, schedule.Interval),
                     Start = schedule.Start,
                     Stop = schedule.Stop
                 };
@@ -101,7 +78,7 @@ namespace Scheduling
                     // Run the task if it is not currently running or does not need to be paused
                     if (!scheduledTask.Running && !scheduledTask.Paused)
                     {
-                        scheduledTask.Running = true;
+                        scheduledTask.Running = true;                     
                         try
                         {
                             object classObject = Activator.CreateInstance(scheduledTask.Type);

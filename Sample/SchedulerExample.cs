@@ -31,9 +31,9 @@ namespace Sample
 
 
         [Schedule(IntervalType = IntervalType.ONCE)]
-        public void OnceOff()
+        public void OnceOffDaily()
         {
-            LogToConsole("Once Off", ConsoleColor.Magenta);
+            LogToConsole("Once Off Daily", ConsoleColor.Magenta);
         }
 
         [Schedule(IntervalType = IntervalType.SECONDS, Interval = 5, Start = "17:00", Stop = "17:12")]

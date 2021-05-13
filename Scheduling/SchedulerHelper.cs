@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Scheduling.Constants;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -44,6 +45,30 @@ namespace Scheduling
             }
 
             return runDateTime;
+        }
+
+        public double GetIntervalInHours(IntervalType intervalType, int interval)
+        {
+            double intervalInHours;
+            switch (intervalType)
+            {
+                case IntervalType.DAYS:
+                    intervalInHours = (double)interval * 24;
+                    break;
+                case IntervalType.HOURS:
+                    intervalInHours = (double)interval;
+                    break;
+                case IntervalType.MINTURES:
+                    intervalInHours = (double)interval / 60;
+                    break;
+                case IntervalType.SECONDS:
+                    intervalInHours = (double)interval / 3600;
+                    break;
+                default:
+                    intervalInHours = 0;
+                    break;
+            }
+            return intervalInHours;
         }
 
         public bool Pause(DateTime? startRun, DateTime? stopRun)
