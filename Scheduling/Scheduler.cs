@@ -1,6 +1,7 @@
 ﻿using Scheduling.Constants;
 using Scheduling.Models;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Threading;
@@ -10,6 +11,63 @@ namespace Scheduling
 {
     public static class Scheduler
     {
+
+        private static ConcurrentDictionary<string, ScheduledTask> ScheduledTasks = new ConcurrentDictionary<string, ScheduledTask>();
+
+        private static double GetIntervalInHours(Scheduling.Attributes.Schedule schedule)
+        {
+            double intervalInHours;
+            switch (schedule.IntervalType)
+            {
+                case IntervalType.DAYS:
+                    intervalInHours = (double)schedule.Interval * 24;
+                    break;
+                case IntervalType.HOURS:
+                    intervalInHours = (double)schedule.Interval;
+                    break;
+                case IntervalType.MINTURES:
+                    intervalInHours = (double)schedule.Interval / 60;
+                    break;
+                case IntervalType.SECONDS:
+                    intervalInHours = (double)schedule.Interval / 3600;
+                    break;
+                default:
+                    intervalInHours = 0;
+                    break;
+            }
+            return intervalInHours;
+        }
+
+        private static string AddScheduledTask(System.Type type, MethodInfo method, Scheduling.Attributes.Schedule schedule)
+        {
+            string key = type.FullName + "." + method.Name;
+            if (!ScheduledTasks.ContainsKey(key))
+            {
+                // TOOD: If the key exists, we should actually stop the schedule and re-add it. 
+                ScheduledTask scheduleTask = new ScheduledTask()
+                {
+                    Type = type,
+                    Method = method,
+                    IntervalInHours = GetIntervalInHours(schedule),
+                    Start = schedule.Start,
+                    Stop = schedule.Stop
+                };
+                ScheduledTasks.TryAdd(key, scheduleTask);
+            }
+            return key;
+        }
+
+        private static ScheduledTask GetScheduledTask(string key)
+        {
+            ScheduledTask scheduleTask;
+            ScheduledTasks.TryGetValue(key, out scheduleTask);
+            return scheduleTask;
+        }
+
+        private static List<string> GetScheduleTasks()
+        {
+            return new List<string>(ScheduledTasks.Keys);
+        }
 
         private static List<System.Type> GetSchedulerTypes()
         {
@@ -28,20 +86,26 @@ namespace Scheduling
         }
 
         // TODO: Need to add logging;
-        private static void InvokeScheduledTask(ScheduledTask scheduledTask)
+        private static void InitiateScheduledTask(ScheduledTask scheduledTask)
         {
             try
             {
-                DateTime startRun = (DateTime) (SchedulerHelper.Instance.GetDateTime(scheduledTask.Start) ?? DateTime.Now);
+                DateTime startRun = (DateTime)(SchedulerHelper.Instance.GetDateTime(scheduledTask.Start) ?? DateTime.Now);
+                DateTime? stopRun = SchedulerHelper.Instance.GetDateTime(scheduledTask.Stop);
+
                 scheduledTask.Timer = SchedulerService.Instance.ScheduleTask(scheduledTask.IntervalInHours, startRun, () =>
-                {                    
-                    if (!scheduledTask.Running && !scheduledTask.Terminate)
+                {
+                    // First check if the scheduled task needs to be "paused"
+                    scheduledTask.Paused = SchedulerHelper.Instance.Pause(startRun, stopRun);
+
+                    // Run the task if it is not currently running or does not need to be paused
+                    if (!scheduledTask.Running && !scheduledTask.Paused)
                     {
                         scheduledTask.Running = true;
                         try
                         {
                             object classObject = Activator.CreateInstance(scheduledTask.Type);
-                            scheduledTask.Method.Invoke(classObject, null);                            
+                            scheduledTask.Method.Invoke(classObject, null);
                         }
                         catch (Exception e)
                         {
@@ -50,40 +114,17 @@ namespace Scheduling
                         scheduledTask.Running = false;
                     }
                 });
-            } catch (Exception e)
-            {
-                Console.WriteLine(e.Message);                
-            }
-        }
-
-        // TODO: Need to add logging;
-        private static void TerminateScheduledTask(ScheduledTask scheduledTask)
-        {
-            try
-            {                 
-                scheduledTask.Terminate = true;
-
-                Task task = new Task(() =>
-                {
-                    int wait = (int)scheduledTask.IntervalInHours * 3600;
-                    while (scheduledTask.Running)
-                    {                        
-                        try
-                        {
-                            Thread.Sleep(wait);
-                        }
-                        catch (Exception e)
-                        {
-                            Console.WriteLine(e.Message);
-                        }
-                    }
-                    scheduledTask.Timer.Dispose();                    
-                });               
             }
             catch (Exception e)
             {
                 Console.WriteLine(e.Message);
-            }        
+            }
+        }
+
+        // TODO: Need to add logging;
+        private static void PauseScheduledTask(ScheduledTask scheduledTask)
+        {
+            scheduledTask.Paused = true;          
         }
 
         private static void InitateSchedules()
@@ -104,7 +145,7 @@ namespace Scheduling
                 foreach (MethodInfo method in methods)
                 {
                     Scheduling.Attributes.Schedule schedule = (Scheduling.Attributes.Schedule) method.GetCustomAttribute(typeof(Scheduling.Attributes.Schedule));
-                    SchedulerTaskCache.Instance.AddScheduledTask(type, method, schedule);                             
+                    AddScheduledTask(type, method, schedule);                             
                 }
             }
         }
@@ -112,41 +153,21 @@ namespace Scheduling
         public static void Start() 
         {
             InitateSchedules();
-            foreach (string key in SchedulerTaskCache.Instance.GetScheduleTasks())
+            foreach (string key in GetScheduleTasks())
             {
-                ScheduledTask scheduleTask = SchedulerTaskCache.Instance.GetScheduledTask(key);
-                InvokeScheduledTask(scheduleTask);
-            }
-            SchedulerWatcher.Instance.Start();
-        }
-
-        public static void HouseKeep()
-        {
-            Console.WriteLine("House Keep...");
-            foreach (string key in SchedulerTaskCache.Instance.GetScheduleTasks())
-            {
-                ScheduledTask scheduleTask = SchedulerTaskCache.Instance.GetScheduledTask(key);                
-                DateTime? runStop = SchedulerHelper.Instance.GetDateTime(scheduleTask.Stop);
-                if(runStop != null)
-                {                    
-                    TimeSpan timeToStop = DateTime.Now - (DateTime) runStop;
-                    if(timeToStop >= TimeSpan.Zero)
-                    {
-                        Console.WriteLine("Terminating...");
-                        TerminateScheduledTask(scheduleTask);
-                    }                    
-                }                
+                ScheduledTask scheduleTask = GetScheduledTask(key);
+                InitiateScheduledTask(scheduleTask);
             }
         }
 
         public static void Stop()
         {        
-            foreach (string key in SchedulerTaskCache.Instance.GetScheduleTasks())
+            foreach (string key in GetScheduleTasks())
             {
-                ScheduledTask scheduledTask = SchedulerTaskCache.Instance.GetScheduledTask(key);
-                TerminateScheduledTask(scheduledTask);
+                ScheduledTask scheduledTask = GetScheduledTask(key);
+                PauseScheduledTask(scheduledTask);
             }
-            SchedulerWatcher.Instance.Stop();
+            
         }
     }
 }

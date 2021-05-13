@@ -46,5 +46,21 @@ namespace Scheduling
             return runDateTime;
         }
 
+        public bool Pause(DateTime? startRun, DateTime? stopRun)
+        {
+            bool pause = true;
+            if(startRun != null)
+            {
+                TimeSpan timeToStart = (DateTime) startRun - DateTime.Now;
+                pause &= !(timeToStart >= TimeSpan.Zero);
+            }
+            if (stopRun != null)
+            {
+                TimeSpan timeToStop = DateTime.Now - (DateTime) stopRun;
+                pause &= !(timeToStop >= TimeSpan.Zero);
+            }
+            return !pause;
+        }
+
     }
 }

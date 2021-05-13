@@ -22,7 +22,7 @@ namespace Sample
             }
         }
 
-        [Schedule(IntervalType = IntervalType.ONCE, Start = "17:20")]
+        [Schedule(IntervalType = IntervalType.ONCE, Start = "21:20")]
         public void TerminateTasks()
         {
             LogToConsole("Terminate Tasks", ConsoleColor.Cyan);
@@ -36,7 +36,7 @@ namespace Sample
             LogToConsole("Once Off", ConsoleColor.Magenta);
         }
 
-        [Schedule(IntervalType = IntervalType.SECONDS, Interval = 5, Start = "17:00", Stop = "17:03")]
+        [Schedule(IntervalType = IntervalType.SECONDS, Interval = 5, Start = "17:00", Stop = "17:12")]
         public void FiveSecondIntervalBetweenXAndY()
         {
             LogToConsole("Five Second Interval between X and Y", ConsoleColor.Gray);
