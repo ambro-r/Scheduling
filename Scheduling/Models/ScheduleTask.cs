@@ -11,7 +11,8 @@ namespace Scheduling.Models
         public int Executed { get; set; } = 0;
         public System.Type Type { get; set;  }
         public MethodInfo Method { get; set;  }        
-        public Scheduling.Attributes.Schedule Schedule { get; set; }        
+        public Scheduling.Attributes.Schedule Schedule { get; set; }
+        public System.Threading.Timer Timer { get; set; }
 
     }
 }

@@ -57,54 +57,38 @@ namespace Scheduling
             return minute;
         }
 
-        private DateTime GetStartDateTime(Scheduling.Attributes.Schedule schedule)
+        private DateTime? GetDateTime(string time)
         {            
-            int startHour = GetHour(schedule.Start);
-            int startMinute = GetMinute(schedule.Start);
+            int startHour = GetHour(time);
+            int startMinute = GetMinute(time);
 
             DateTime now = DateTime.Now;
-            DateTime startRun = now;
+            DateTime? runDateTime = null;
             if (startHour > -1)
             {
-                startRun = new DateTime(now.Year, now.Month, now.Day, startHour, startMinute, 0, 0);
+                runDateTime = new DateTime(now.Year, now.Month, now.Day, startHour, startMinute, 0, 0);
             }
 
-            return startRun;
+            return runDateTime;
         }
-
-        private DateTime? GetStopDateTime(Scheduling.Attributes.Schedule schedule)
-        {
-            int stopHour = GetHour(schedule.Stop);
-            int stopMinute = GetMinute(schedule.Stop);
-
-            DateTime now = DateTime.Now;
-            DateTime? stopRun = null;
-            if (stopHour > -1)
-            {
-                stopRun = new DateTime(now.Year, now.Month, now.Day, stopHour, stopMinute, 0, 0);
-            }
-
-            return stopRun;
-        }
+     
       
-        public void ScheduleTask(Scheduling.Attributes.Schedule schedule, Action task)
+        public Timer ScheduleTask(Scheduling.Attributes.Schedule schedule, Action task)
         {
-            DateTime startRun = GetStartDateTime(schedule);
-            DateTime? stopRun = GetStopDateTime(schedule);
-
-            TimeSpan timeToStart = startRun - DateTime.Now;
+            DateTime? startRun = GetDateTime(schedule.Start);
+            
+            TimeSpan timeToStart = ((DateTime)(startRun != null ? startRun : DateTime.Now)) - DateTime.Now;
             if (timeToStart <= TimeSpan.Zero)
             {
                 timeToStart = TimeSpan.Zero;
             }
-
             
             Timer timer = new Timer(x =>
             {
                 task.Invoke();
             }, null, timeToStart, TimeSpan.FromHours(GetIntervalInHours(schedule)));
 
-            Timers.Add(timer);
+            return timer;
         }
 
     }
