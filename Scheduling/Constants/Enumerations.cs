@@ -9,7 +9,7 @@
         DAYS
     }
 
-    public enum Days
+    public enum Day
     {
         MONDAY,
         TUESDAY,

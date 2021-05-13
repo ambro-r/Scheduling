@@ -8,7 +8,7 @@ namespace Sample
         private static void Main(string[] args)
         {
             Console.WriteLine("Press any key to stop...");
-            Scheduler.InitateSchedules();            
+            Scheduler.Start();            
             Console.ReadKey();
         }
     }

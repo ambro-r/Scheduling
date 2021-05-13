@@ -22,16 +22,38 @@ namespace Sample
             }
         }
 
-        [Schedule(IntervalType = IntervalType.SECONDS, Interval = 50)]
-        public void FifthySecondInterval()
+        [Schedule(IntervalType = IntervalType.ONCE, Start = "21:20")]
+        public void TerminateTasks()
         {
-            LogToConsole("Fifthy Second Interval", ConsoleColor.Green);
+            LogToConsole("Terminate Tasks", ConsoleColor.Cyan);
+            Scheduling.Scheduler.Stop();
         }
 
-        [Schedule(IntervalType = IntervalType.MINTURES, Interval = 2)]
-        public void TwoMinuteInterval()
+
+        [Schedule(IntervalType = IntervalType.ONCE)]
+        public void OnceOffDaily()
         {
-            LogToConsole("Two Minute Interval", ConsoleColor.Yellow);
+            LogToConsole("Once Off Daily", ConsoleColor.Magenta);
+        }
+
+        [Schedule(IntervalType = IntervalType.SECONDS, Interval = 5, Start = "17:00", Stop = "17:12")]
+        public void FiveSecondIntervalBetweenXAndY()
+        {
+            LogToConsole("Five Second Interval between X and Y", ConsoleColor.Gray);
+        }
+
+        [Schedule(IntervalType = IntervalType.SECONDS, Interval = 10)]
+        public void TenSeconIntervalSixitySecondSleep()
+        {
+            LogToConsole("Ten Second Interval (Thirty Second Execution)", ConsoleColor.White);
+            try
+            {
+                Thread.Sleep(30000);
+            }
+            catch (Exception e)
+            {
+                LogToConsole("Exception occurred on MultipleInstances method: " + e.Message, ConsoleColor.White);
+            }
         }
 
         [Schedule(IntervalType = IntervalType.SECONDS, Interval = 30)]
@@ -40,31 +62,12 @@ namespace Sample
             LogToConsole("Thirty Second Interval", ConsoleColor.Red);
         }
 
-        [Schedule(IntervalType = IntervalType.SECONDS, Interval = 20)]
-        public void TwentySecondIntervalSixitySecondSleep()
-        {
-            LogToConsole("Twenty Second Interval + Sixity Second Sleep", ConsoleColor.White);
-            try
-            {
-                Thread.Sleep(60000);
-            }
-            catch (Exception e)
-            {
-                LogToConsole("Exception occurred on MultipleInstances method: " + e.Message, ConsoleColor.White);
-            }
-        }
 
-        [Schedule(IntervalType = IntervalType.ONCE)]
-        public void OnceOff()
+        [Schedule(IntervalType = IntervalType.MINTURES, Interval = 1)]
+        public void OneMinuteInterval()
         {
-            LogToConsole("Once Off", ConsoleColor.Magenta);
-        }
-        
-        [Schedule(IntervalType = IntervalType.SECONDS, Interval = 5, Start = "09:55", Stop = "09:00")]
-        public void FiveSecondInterval()
-        {
-            LogToConsole("Five Second Interval between 08:00 and 09:00", ConsoleColor.Gray);
-        }
-
+            LogToConsole("One Minute Interval", ConsoleColor.Yellow);
+        }     
+           
     }
 }

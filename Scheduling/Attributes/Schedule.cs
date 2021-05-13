@@ -7,7 +7,7 @@ namespace Scheduling.Attributes
 
     public class Schedule : Attribute
     {
-        public List<Days> Days { get; set; }
+        public Day Day { get; set; }
 
         public IntervalType IntervalType { get; set; }
 
