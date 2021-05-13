@@ -12,7 +12,7 @@ namespace Sample
         public SchedulerExample()
         {
         }
-
+       
         [Schedule(IntervalType = IntervalType.SECONDS, Interval = 50)]
         public void FifthySecondInterval()
         {
@@ -74,8 +74,8 @@ namespace Sample
                 Console.WriteLine(string.Format("{0}:{1}", DateTime.Now.ToString("hh:mm:ss"), "Once Off"));
             }
         }
-
-        [Schedule(IntervalType = IntervalType.SECONDS, Interval = 5, Start = "08:00", Stop = "09:00")]
+        
+        [Schedule(IntervalType = IntervalType.SECONDS, Interval = 5, Start = "09:55", Stop = "09:00")]
         public void FiveSecondInterval()
         {
             lock (Console.Out)

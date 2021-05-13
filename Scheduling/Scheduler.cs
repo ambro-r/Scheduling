@@ -26,45 +26,31 @@ namespace Scheduling
 
         private static void InvokeMethod(System.Type schedulerType, MethodInfo method, Scheduling.Attributes.Schedule schedule)
         {
-            double intervalInHours;
-            switch (schedule.IntervalType)
+            try
             {
-                case IntervalType.DAYS:
-                    intervalInHours = (double)schedule.Interval * 24;
-                    break;
-                case IntervalType.HOURS:
-                    intervalInHours = (double)schedule.Interval;
-                    break;
-                case IntervalType.MINTURES:
-                    intervalInHours = (double)schedule.Interval / 60;
-                    break;
-                case IntervalType.SECONDS:
-                    intervalInHours = (double)schedule.Interval / 3600;
-                    break;
-                default:
-                    intervalInHours = 0;
-                    break;
-            }
-
-            SchedulerService.Instance.ScheduleTask(DateTime.Now.Hour, DateTime.Now.Minute, intervalInHours, () =>
-            {
-                string key = schedulerType.FullName + "." + method.Name;
-                if (SchedulerCache.Instance.Start(key))
+                SchedulerService.Instance.ScheduleTask(schedule, () =>
                 {
-                    try
+                    string key = schedulerType.FullName + "." + method.Name;
+                    if (SchedulerCache.Instance.Start(key))
                     {
-                        object classObject = Activator.CreateInstance(schedulerType);
-                        method.Invoke(classObject, null);
+                        try
+                        {
+                            object classObject = Activator.CreateInstance(schedulerType);
+                            method.Invoke(classObject, null);
                         // TODO: Add Logging;
                     }
-                    catch (Exception)
-                    {
+                        catch (Exception)
+                        {
                         // TODO: Add Logging;
                     }
-                    SchedulerCache.Instance.Stop(key);
-                }
-            });
-
+                        SchedulerCache.Instance.Stop(key);
+                    }
+                });
+            } catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+                // TODO: Add Logging;
+            }
         }
 
         public static void InitateSchedules()
