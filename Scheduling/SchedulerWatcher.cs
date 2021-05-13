@@ -21,8 +21,7 @@ namespace Scheduling
         {
             if (Watcher == null)
             {
-                double intervalInHours = (double) 1 / 6; // Essentially every 10 minutes
-                Console.WriteLine(intervalInHours);
+                double intervalInHours = (double) 1 / 60; // Essentially every 1 minutes                
                 TimeSpan timeToStart = TimeSpan.Zero;
                 Watcher = new Timer(x =>
                 {

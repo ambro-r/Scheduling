@@ -3,6 +3,8 @@ using Scheduling.Models;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Scheduling
 {
@@ -26,25 +28,26 @@ namespace Scheduling
         }
 
         // TODO: Need to add logging;
-        private static void InvokeTask(ScheduleTask scheduleTask)
+        private static void InvokeScheduledTask(ScheduledTask scheduledTask)
         {
             try
             {
-                scheduleTask.Timer = SchedulerService.Instance.ScheduleTask(scheduleTask.Schedule, () =>
+                DateTime startRun = (DateTime) (SchedulerHelper.Instance.GetDateTime(scheduledTask.Start) ?? DateTime.Now);
+                scheduledTask.Timer = SchedulerService.Instance.ScheduleTask(scheduledTask.IntervalInHours, startRun, () =>
                 {                    
-                    if (!scheduleTask.Running)
+                    if (!scheduledTask.Running && !scheduledTask.Terminate)
                     {
-                        scheduleTask.Running = true;
+                        scheduledTask.Running = true;
                         try
                         {
-                            object classObject = Activator.CreateInstance(scheduleTask.Type);
-                            scheduleTask.Method.Invoke(classObject, null);                            
+                            object classObject = Activator.CreateInstance(scheduledTask.Type);
+                            scheduledTask.Method.Invoke(classObject, null);                            
                         }
                         catch (Exception e)
                         {
                             Console.WriteLine(e.Message);
                         }
-                        scheduleTask.Running = false;
+                        scheduledTask.Running = false;
                     }
                 });
             } catch (Exception e)
@@ -53,10 +56,29 @@ namespace Scheduling
             }
         }
 
-        private static void TerminateTask(ScheduleTask scheduleTask)
+        // TODO: Need to add logging;
+        private static void TerminateScheduledTask(ScheduledTask scheduledTask)
         {
             try
-            {               
+            {                 
+                scheduledTask.Terminate = true;
+
+                Task task = new Task(() =>
+                {
+                    int wait = (int)scheduledTask.IntervalInHours * 3600;
+                    while (scheduledTask.Running)
+                    {                        
+                        try
+                        {
+                            Thread.Sleep(wait);
+                        }
+                        catch (Exception e)
+                        {
+                            Console.WriteLine(e.Message);
+                        }
+                    }
+                    scheduledTask.Timer.Dispose();                    
+                });               
             }
             catch (Exception e)
             {
@@ -82,7 +104,7 @@ namespace Scheduling
                 foreach (MethodInfo method in methods)
                 {
                     Scheduling.Attributes.Schedule schedule = (Scheduling.Attributes.Schedule) method.GetCustomAttribute(typeof(Scheduling.Attributes.Schedule));
-                    SchedulerTaskCache.Instance.AddScheduleTask(type, method, schedule);                             
+                    SchedulerTaskCache.Instance.AddScheduledTask(type, method, schedule);                             
                 }
             }
         }
@@ -92,8 +114,8 @@ namespace Scheduling
             InitateSchedules();
             foreach (string key in SchedulerTaskCache.Instance.GetScheduleTasks())
             {
-                ScheduleTask scheduleTask = SchedulerTaskCache.Instance.GetScheduleTask(key);
-                InvokeTask(scheduleTask);
+                ScheduledTask scheduleTask = SchedulerTaskCache.Instance.GetScheduledTask(key);
+                InvokeScheduledTask(scheduleTask);
             }
             SchedulerWatcher.Instance.Start();
         }
@@ -101,14 +123,28 @@ namespace Scheduling
         public static void HouseKeep()
         {
             Console.WriteLine("House Keep...");
+            foreach (string key in SchedulerTaskCache.Instance.GetScheduleTasks())
+            {
+                ScheduledTask scheduleTask = SchedulerTaskCache.Instance.GetScheduledTask(key);                
+                DateTime? runStop = SchedulerHelper.Instance.GetDateTime(scheduleTask.Stop);
+                if(runStop != null)
+                {                    
+                    TimeSpan timeToStop = DateTime.Now - (DateTime) runStop;
+                    if(timeToStop >= TimeSpan.Zero)
+                    {
+                        Console.WriteLine("Terminating...");
+                        TerminateScheduledTask(scheduleTask);
+                    }                    
+                }                
+            }
         }
 
         public static void Stop()
         {        
             foreach (string key in SchedulerTaskCache.Instance.GetScheduleTasks())
             {
-                ScheduleTask scheduleTask = SchedulerTaskCache.Instance.GetScheduleTask(key);
-                TerminateTask(scheduleTask);
+                ScheduledTask scheduledTask = SchedulerTaskCache.Instance.GetScheduledTask(key);
+                TerminateScheduledTask(scheduledTask);
             }
             SchedulerWatcher.Instance.Stop();
         }
